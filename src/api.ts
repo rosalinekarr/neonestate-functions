@@ -10,6 +10,7 @@ import {
   getRoom,
   getUsers,
   getUser,
+  listenEvents,
   updateRoom,
 } from "./handlers";
 
@@ -18,9 +19,11 @@ const api = express();
 api.use(express.json());
 
 api.use(async (request: Request, response: Response, next) => {
-  const authToken = (request.headers.authorization || "").match(
+  const paramToken = request.query.token;
+  const headerToken = (request.headers.authorization || "").match(
     /Bearer (.+)/,
   )?.[1];
+  const authToken = typeof paramToken === "string" ? paramToken : headerToken;
   const { uid } = await getAuth().verifyIdToken(authToken || "");
   response.locals.uid = uid;
   next();
@@ -45,16 +48,18 @@ function handleAsyncErrors(
   };
 }
 
-api.get("/api/posts", handleAsyncErrors(getPosts));
-api.post("/api/posts", handleAsyncErrors(createPost));
+api.get("/events", listenEvents);
 
-api.get("/api/rooms", handleAsyncErrors(getRooms));
-api.get("/api/rooms/:id", handleAsyncErrors(getRoom));
-api.post("/api/rooms", handleAsyncErrors(createRoom));
-api.put("/api/rooms/:id", handleAsyncErrors(updateRoom));
+api.get("/posts", handleAsyncErrors(getPosts));
+api.post("/posts", handleAsyncErrors(createPost));
 
-api.get("/api/users", handleAsyncErrors(getUsers));
-api.get("/api/users/:id", handleAsyncErrors(getUser));
-api.post("/api/users", handleAsyncErrors(createUser));
+api.get("/rooms", handleAsyncErrors(getRooms));
+api.get("/rooms/:id", handleAsyncErrors(getRoom));
+api.post("/rooms", handleAsyncErrors(createRoom));
+api.put("/rooms/:id", handleAsyncErrors(updateRoom));
+
+api.get("/users", handleAsyncErrors(getUsers));
+api.get("/users/:id", handleAsyncErrors(getUser));
+api.post("/users", handleAsyncErrors(createUser));
 
 export default api;

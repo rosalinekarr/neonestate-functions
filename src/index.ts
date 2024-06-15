@@ -6,7 +6,7 @@ admin.initializeApp({
   projectId: "neon-estate",
 });
 
-exports.app = onRequest(
+exports.api = onRequest(
   {
     cors: ["neon.estate"],
   },

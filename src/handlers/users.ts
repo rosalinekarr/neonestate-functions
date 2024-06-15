@@ -77,6 +77,7 @@ export async function createUser(request: Request, response: Response) {
   await db.doc(`users/${uid}`).set({
     avatarPath,
     createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
     username,
   });
   const doc = await db.doc(`users/${uid}`).get();

@@ -29,12 +29,15 @@ export async function getPosts(request: Request, response: Response) {
   logger.info("Rooms queried", { createdBefore, roomId });
   response.json(
     querySnapshot.docs.map((doc) => {
-      const { authorId, sections, createdAt } = doc.data();
+      const { authorId, sections, createdAt, deletedAt, updatedAt } =
+        doc.data();
+      if (deletedAt) return { id: doc.id, deletedAt };
       return {
         id: doc.id,
         authorId,
         sections,
         createdAt: createdAt.seconds,
+        updatedAt: updatedAt.seconds,
       };
     }),
   );

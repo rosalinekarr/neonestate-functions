@@ -1,3 +1,4 @@
+import { listenEvents } from "./events";
 import { createPost, getPosts } from "./posts";
 import { createRoom, getRooms, getRoom, updateRoom } from "./rooms";
 import { createUser, getUsers, getUser } from "./users";
@@ -11,5 +12,6 @@ export {
   getRoom,
   getUsers,
   getUser,
+  listenEvents,
   updateRoom,
 };
