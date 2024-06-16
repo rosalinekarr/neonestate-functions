@@ -22,12 +22,13 @@ export async function getUsers(request: Request, response: Response) {
   logger.info("Users queried", { name });
   response.json(
     querySnapshot.docs.map((doc) => {
-      const { avatarPath, createdAt, username } = doc.data();
+      const { avatarPath, createdAt, updatedAt, username } = doc.data();
       return {
         id: doc.id,
         avatarPath,
         username,
-        createdAt: createdAt.seconds,
+        createdAt: createdAt?.seconds,
+        updatedAt: updatedAt?.seconds,
       };
     }),
   );
@@ -49,6 +50,7 @@ export async function getUser(request: Request, response: Response) {
     avatarPath: data?.avatarPath,
     username: data?.username,
     createdAt: data?.createdAt?.seconds,
+    updatedAt: data?.updatedAt?.seconds,
   });
 }
 
@@ -89,5 +91,6 @@ export async function createUser(request: Request, response: Response) {
     avatarPath: data?.avatarPath,
     username: data?.username,
     createdAt: data?.createdAt?.seconds,
+    updatedAt: data?.updatedAt?.seconds,
   });
 }

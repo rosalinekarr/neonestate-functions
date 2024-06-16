@@ -8,7 +8,7 @@ admin.initializeApp({
 
 exports.api = onRequest(
   {
-    cors: ["neon.estate"],
+    cors: ["https://neon.estate"],
   },
   api,
 );

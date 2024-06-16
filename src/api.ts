@@ -13,18 +13,25 @@ import {
   listenEvents,
   updateRoom,
 } from "./handlers";
+import { HttpsError } from "firebase-functions/v2/https";
 
 const api = express();
 
 api.use(express.json());
 
-api.use(async (request: Request, response: Response, next) => {
-  const paramToken = request.query.token;
+function grabAuthToken(request: Request) {
   const headerToken = (request.headers.authorization || "").match(
     /Bearer (.+)/,
   )?.[1];
-  const authToken = typeof paramToken === "string" ? paramToken : headerToken;
-  const { uid } = await getAuth().verifyIdToken(authToken || "");
+  if (headerToken) return headerToken;
+  const paramToken = request.query.token;
+  if (typeof paramToken === "string") return paramToken;
+  throw new HttpsError("permission-denied", "Invalid authorization token");
+}
+
+api.use(async (request: Request, response: Response, next) => {
+  const authToken = grabAuthToken(request);
+  const { uid } = await getAuth().verifyIdToken(authToken);
   response.locals.uid = uid;
   next();
 });

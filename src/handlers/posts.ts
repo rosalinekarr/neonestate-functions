@@ -36,8 +36,8 @@ export async function getPosts(request: Request, response: Response) {
         id: doc.id,
         authorId,
         sections,
-        createdAt: createdAt.seconds,
-        updatedAt: updatedAt.seconds,
+        createdAt: createdAt?.seconds,
+        updatedAt: updatedAt?.seconds,
       };
     }),
   );
@@ -93,6 +93,7 @@ export async function createPost(request: Request, response: Response) {
     }),
     createdAt: Timestamp.now(),
     roomId,
+    updatedAt: Timestamp.now(),
   });
   const doc = await docRef.get();
 
@@ -104,5 +105,6 @@ export async function createPost(request: Request, response: Response) {
     sections: data?.sections,
     createdAt: data?.createdAt?.seconds,
     roomId: data?.roomId,
+    updatedAt: data?.updatedAt?.seconds,
   });
 }

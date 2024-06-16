@@ -12,7 +12,6 @@ export async function listenEvents(request: Request, response: Response) {
   const lastTs = parseInt(lastTsRaw);
 
   response.set({
-    "Access-Control-Allow-Credentials": "true",
     "Cache-Control": "no-cache",
     "Content-Type": "text/event-stream",
     Connection: "keep-alive",
@@ -24,9 +23,10 @@ export async function listenEvents(request: Request, response: Response) {
   const unsubscribePosts = db
     .collection("posts")
     .where("updatedAt", ">=", Timestamp.fromMillis(lastTs * 1000))
-    .onSnapshot((querySnapshot) =>
-      querySnapshot.forEach(
-        (docSnapshot) => {
+    .onSnapshot(
+      (querySnapshot) => {
+        logger.info("Post snapshot");
+        querySnapshot.forEach((docSnapshot) => {
           const post = docSnapshot.data();
           if (post.deletedAt) {
             const msg = { id: post.id, deletedAt: post.deletedAt };
@@ -45,12 +45,12 @@ export async function listenEvents(request: Request, response: Response) {
               `event: postupdated\ndata: ${JSON.stringify(post)}\n\n`,
             );
           }
-        },
-        (error: Error) => {
-          logger.error("Error listening for post events", { error });
-          response.end();
-        },
-      ),
+        });
+      },
+      (error: Error) => {
+        logger.error("Error listening for post events", { error });
+        response.end();
+      },
     );
 
   const unsubscribeUsers = db
@@ -58,6 +58,7 @@ export async function listenEvents(request: Request, response: Response) {
     .where("updatedAt", ">=", Timestamp.fromMillis(lastTs * 1000))
     .onSnapshot(
       (querySnapshot) => {
+        logger.info("User snapshot");
         querySnapshot.forEach((docSnapshot) => {
           const user = docSnapshot.data();
           if (user.deletedAt) {

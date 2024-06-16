@@ -22,14 +22,10 @@
   "hosting": {
     "site": "api-neon-estate",
     "public": "dist",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       {
-        "source": "/**",
+        "source": "**",
         "function": {
           "functionId": "api",
           "region": "us-central1"

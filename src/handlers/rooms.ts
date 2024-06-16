@@ -33,15 +33,22 @@ export async function getRooms(request: Request, response: Response) {
   logger.info("Rooms queried", { name, sort });
   response.json(
     querySnapshot.docs.map((doc) => {
-      const { backgroundPath, createdAt, createdBy, description, name } =
-        doc.data();
+      const {
+        backgroundPath,
+        createdAt,
+        createdBy,
+        description,
+        name,
+        updatedAt,
+      } = doc.data();
       return {
         id: doc.id,
         backgroundPath,
         description,
-        createdAt: createdAt.seconds,
+        createdAt: createdAt?.seconds,
         createdBy,
         name,
+        updatedAt: updatedAt?.seconds,
       };
     }),
   );
@@ -65,6 +72,7 @@ export async function getRoom(request: Request, response: Response) {
     createdBy: data?.createdBy,
     description: data?.description,
     name: data?.name,
+    updatedAt: data?.updatedAt?.seconds,
   });
 }
 
@@ -97,6 +105,7 @@ export async function createRoom(request: Request, response: Response) {
     description: request.body?.description || "",
     memberCount: 1,
     name: roomName,
+    updatedAt: Timestamp.now(),
   });
   const doc = await docRef.get();
 
@@ -109,6 +118,7 @@ export async function createRoom(request: Request, response: Response) {
     createdBy: data?.createdBy,
     description: data?.description,
     name: data?.name,
+    updatedAt: data?.updatedAt?.seconds,
   });
 }
 
@@ -130,6 +140,7 @@ export async function updateRoom(request: Request, response: Response) {
     ...docSnapshot.data(),
     ...(backgroundPath ? { backgroundPath } : {}),
     ...(description ? { description } : {}),
+    updatedAt: Timestamp.now(),
   };
 
   await docRef.set(updatedRoom);
