@@ -3,7 +3,7 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "deploy": "firebase deploy --only functions,storage,firestore",
+    "deploy": "firebase deploy",
     "fix": "npm run fix:eslint && npm run fix:prettier",
     "fix:eslint": "eslint --ext .ts --fix src",
     "fix:prettier": "npx prettier . --write",
@@ -11,8 +11,8 @@
     "lint:eslint": "eslint --ext .ts src",
     "lint:prettier": "npx prettier . --check",
     "logs": "firebase functions:log",
-    "serve": "npm run build && firebase emulators:start --only auth,firestore,functions,storage",
-    "serve:watch": "npm run build:watch; firebase emulators:start --only auth,firestore,functions,storage",
+    "serve": "npm run build && firebase emulators:start",
+    "serve:watch": "npm run build:watch; firebase emulators:start",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell"
   },
