@@ -14,8 +14,8 @@ import {
   updateProfile,
   updateRoom,
 } from "./handlers";
-import { HttpsError } from "firebase-functions/v2/https";
 import { getFirestore } from "firebase-admin/firestore";
+import { HttpsError } from "firebase-functions/v2/https";
 import { fetchUsers } from "./models/user";
 
 const api = express();
@@ -36,12 +36,10 @@ api.use(async (request: Request, response: Response, next) => {
   const authToken = grabAuthToken(request);
   const { phone_number: phoneNumber } =
     await getAuth().verifyIdToken(authToken);
+  response.locals.phoneNumber = phoneNumber;
   const db = getFirestore();
   const [currentUser] = await fetchUsers(db, { phoneNumber });
-  response.locals.currentUser = {
-    ...currentUser,
-    phoneNumber,
-  };
+  response.locals.currentUser = currentUser;
   next();
 });
 

@@ -51,7 +51,7 @@ export function newUser({ id, avatarPath, phoneNumber, username }: any): User {
 
 export async function fetchUsers(
   db: Firestore,
-  { username }: any,
+  { phoneNumber, username }: any,
 ): Promise<User[]> {
   let query: CollectionReference<DocumentData> | Query<DocumentData> =
     db.collection("users");
@@ -61,6 +61,9 @@ export async function fetchUsers(
     username.match(/^[\p{L}\p{N}\p{P}\p{S}]+$/u)
   )
     query = query.where("username", "==", username);
+
+  if (typeof phoneNumber === "string")
+    query = query.where("phoneNumber", "==", phoneNumber);
 
   const results = await query.get();
 
@@ -82,6 +85,16 @@ export async function fetchUser(db: Firestore, id: any): Promise<User> {
     id: doc.id,
     ...data,
   } as User;
+}
+
+export function updateUser(
+  originalUser: User,
+  { avatarPath, username }: any,
+): User {
+  let user = { ...originalUser };
+  if (avatarPath) user.avatarPath = avatarPath;
+  if (username) user.username = username;
+  return user;
 }
 
 export async function saveUser(db: Firestore, user: User): Promise<void> {

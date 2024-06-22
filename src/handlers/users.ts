@@ -3,8 +3,10 @@ import { getFirestore } from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
 import { HttpsError } from "firebase-functions/v2/https";
 import {
+  User,
   fetchUser,
   fetchUsers,
+  updateUser,
   newUser,
   saveUser,
   serializeUser,
@@ -33,31 +35,38 @@ export async function getUser(request: Request, response: Response) {
 }
 
 export async function getProfile(_request: Request, response: Response) {
-  if (!response.locals.currentUser.id)
+  if (!response.locals.currentUser) {
     throw new HttpsError("not-found", "Profile not found");
+  }
 
-  logger.info("User fetched", { currentUser: response.locals.currentUser });
+  logger.info("Profile fetched", { currentUser: response.locals.currentUser });
   response.status(200).json(serializeUser(response.locals.currentUser));
 }
 
 export async function updateProfile(request: Request, response: Response) {
-  const { id: previousId, phoneNumber } = response.locals.currentUser;
-  const user = newUser({
-    ...request.body,
-    phoneNumber,
-    ...(previousId ? { id: previousId } : {}),
-  });
+  const currentUser = response.locals.currentUser;
+  const phoneNumber = response.locals.phoneNumber;
+  let user: User;
+
+  if (currentUser) {
+    user = updateUser(currentUser, request.body);
+  } else {
+    user = newUser({
+      ...request.body,
+      phoneNumber,
+    });
+  }
 
   const db = getFirestore();
   const [existingUser] = await fetchUsers(db, { username: user.username });
-  if (existingUser) {
+  if (existingUser && existingUser.id !== user.id) {
     throw new HttpsError("already-exists", "Username already taken");
   }
 
   await saveUser(db, user);
 
-  logger.info("New user registered", {
-    phoneNumber: response.locals.phoneNumber,
+  logger.info("Profile updated", {
+    phoneNumber,
     user,
   });
   response.json(serializeUser(user));

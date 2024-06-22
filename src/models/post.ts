@@ -87,7 +87,10 @@ export function newPost(currentUser: User, params: any): Post {
 }
 
 export function serializePost(post: Post) {
-  return serializeRecord(post);
+  return {
+    ...serializeRecord(post),
+    authorId: post.createdBy,
+  };
 }
 
 export async function fetchPosts(
