@@ -1,17 +1,18 @@
 import { listenEvents } from "./events";
 import { createPost, getPosts } from "./posts";
 import { createRoom, getRooms, getRoom, updateRoom } from "./rooms";
-import { createUser, getUsers, getUser } from "./users";
+import { getProfile, getUsers, getUser, updateProfile } from "./users";
 
 export {
   createPost,
   createRoom,
-  createUser,
   getPosts,
+  getProfile,
   getRooms,
   getRoom,
   getUsers,
   getUser,
   listenEvents,
   updateRoom,
+  updateProfile,
 };

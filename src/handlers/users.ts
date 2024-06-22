@@ -1,96 +1,64 @@
 import { Request, Response } from "express";
-import { Timestamp, getFirestore } from "firebase-admin/firestore";
+import { getFirestore } from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
 import { HttpsError } from "firebase-functions/v2/https";
+import {
+  fetchUser,
+  fetchUsers,
+  newUser,
+  saveUser,
+  serializeUser,
+} from "../models/user";
 
 export async function getUsers(request: Request, response: Response) {
-  const username = request.query.username;
-
-  if (
-    typeof username !== "string" ||
-    !username.match(/^[\p{L}\p{N}\p{P}\p{S}]+$/u)
-  ) {
-    throw new HttpsError("invalid-argument", "Invalid username");
-  }
-
   const db = getFirestore();
-  const querySnapshot = await db
-    .collection("users")
-    .where("username", "==", username)
-    .get();
+  const users = await fetchUsers(db, request.params);
 
-  logger.info("Users queried", { name });
-  response.json(
-    querySnapshot.docs.map((doc) => {
-      const { avatarPath, createdAt, updatedAt, username } = doc.data();
-      return {
-        id: doc.id,
-        avatarPath,
-        username,
-        createdAt: createdAt?.seconds,
-        updatedAt: updatedAt?.seconds,
-      };
-    }),
-  );
+  logger.info("Users queried", {
+    currentUser: response.locals.currentUser,
+    query: request.params,
+  });
+  response.json(users.map((user) => serializeUser(user)));
 }
 
 export async function getUser(request: Request, response: Response) {
-  const id = request.params.id;
   const db = getFirestore();
-  const docSnapshot = await db.doc(`users/${id}`).get();
+  const user = await fetchUser(db, request.params.id);
 
-  if (!docSnapshot.exists) {
-    throw new HttpsError("not-found", "User not found");
-  }
-
-  logger.info("User fetched", { id });
-  const data = docSnapshot.data();
-  response.status(200).json({
-    id: docSnapshot.id,
-    avatarPath: data?.avatarPath,
-    username: data?.username,
-    createdAt: data?.createdAt?.seconds,
-    updatedAt: data?.updatedAt?.seconds,
+  logger.info("User fetched", {
+    currentUser: response.locals.currentUser,
+    user,
   });
+  response.status(200).json(serializeUser(user));
 }
 
-export async function createUser(request: Request, response: Response) {
-  const uid = response.locals.uid;
-  const avatarPath = request.body?.avatarPath;
-  const username = request.body?.username;
+export async function getProfile(_request: Request, response: Response) {
+  if (!response.locals.currentUser.id)
+    throw new HttpsError("not-found", "Profile not found");
 
-  if (
-    typeof username !== "string" ||
-    !username.match(/^[\p{L}\p{N}\p{P}\p{S}]+$/u)
-  ) {
-    throw new HttpsError("invalid-argument", "Invalid username");
-  }
+  logger.info("User fetched", { currentUser: response.locals.currentUser });
+  response.status(200).json(serializeUser(response.locals.currentUser));
+}
+
+export async function updateProfile(request: Request, response: Response) {
+  const { id: previousId, phoneNumber } = response.locals.currentUser;
+  const user = newUser({
+    ...request.body,
+    phoneNumber,
+    ...(previousId ? { id: previousId } : {}),
+  });
 
   const db = getFirestore();
-  const querySnapshot = await db
-    .collection("users")
-    .where("username", "==", username)
-    .get();
-
-  if (!querySnapshot.empty) {
+  const [existingUser] = await fetchUsers(db, { username: user.username });
+  if (existingUser) {
     throw new HttpsError("already-exists", "Username already taken");
   }
 
-  await db.doc(`users/${uid}`).set({
-    avatarPath,
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
-    username,
-  });
-  const doc = await db.doc(`users/${uid}`).get();
+  await saveUser(db, user);
 
-  logger.info("New user registered", { username });
-  const data = doc.data();
-  response.json({
-    id: doc.id,
-    avatarPath: data?.avatarPath,
-    username: data?.username,
-    createdAt: data?.createdAt?.seconds,
-    updatedAt: data?.updatedAt?.seconds,
+  logger.info("New user registered", {
+    phoneNumber: response.locals.phoneNumber,
+    user,
   });
+  response.json(serializeUser(user));
 }

@@ -4,16 +4,19 @@ import { getAuth } from "firebase-admin/auth";
 import {
   createPost,
   createRoom,
-  createUser,
   getPosts,
+  getProfile,
   getRooms,
   getRoom,
   getUsers,
   getUser,
   listenEvents,
+  updateProfile,
   updateRoom,
 } from "./handlers";
 import { HttpsError } from "firebase-functions/v2/https";
+import { getFirestore } from "firebase-admin/firestore";
+import { fetchUsers } from "./models/user";
 
 const api = express();
 
@@ -31,8 +34,14 @@ function grabAuthToken(request: Request) {
 
 api.use(async (request: Request, response: Response, next) => {
   const authToken = grabAuthToken(request);
-  const { uid } = await getAuth().verifyIdToken(authToken);
-  response.locals.uid = uid;
+  const { phone_number: phoneNumber } =
+    await getAuth().verifyIdToken(authToken);
+  const db = getFirestore();
+  const [currentUser] = await fetchUsers(db, { phoneNumber });
+  response.locals.currentUser = {
+    ...currentUser,
+    phoneNumber,
+  };
   next();
 });
 
@@ -67,6 +76,7 @@ api.put("/rooms/:id", handleAsyncErrors(updateRoom));
 
 api.get("/users", handleAsyncErrors(getUsers));
 api.get("/users/:id", handleAsyncErrors(getUser));
-api.post("/users", handleAsyncErrors(createUser));
+api.get("/profile", handleAsyncErrors(getProfile));
+api.post("/profile", handleAsyncErrors(updateProfile));
 
 export default api;
