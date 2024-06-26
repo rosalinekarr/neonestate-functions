@@ -89,7 +89,7 @@ export function newPost(currentUser: User, params: any): Post {
 export function serializePost(post: Post) {
   return {
     ...serializeRecord(post),
-    authorId: post.createdBy,
+    ...(post.deletedAt ? {} : { authorId: post.createdBy }),
   };
 }
 
