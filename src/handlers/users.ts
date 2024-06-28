@@ -11,19 +11,33 @@ import {
   saveUser,
   serializeUser,
 } from "../models/user";
+import type { paths } from "../schema";
 
-export async function getUsers(request: Request, response: Response) {
+export type GetUsersParams = paths["/users"]["get"]["parameters"];
+export type GetUsersResponse =
+  paths["/users"]["get"]["responses"][200]["content"]["application/json"];
+
+export async function getUsers(
+  request: GetUsersParams,
+  response: Response<GetUsersResponse>,
+) {
   const db = getFirestore();
-  const users = await fetchUsers(db, request.params);
+  const users = await fetchUsers(db, request.query);
 
   logger.info("Users queried", {
     currentUser: response.locals.currentUser,
-    query: request.params,
+    query: request.query,
   });
   response.json(users.map((user) => serializeUser(user)));
 }
 
-export async function getUser(request: Request, response: Response) {
+export type GetUserResponse =
+  paths["/users/{id}"]["get"]["responses"][200]["content"]["application/json"];
+
+export async function getUser(
+  request: Request,
+  response: Response<GetUserResponse>,
+) {
   const db = getFirestore();
   const user = await fetchUser(db, request.params.id);
 
@@ -34,7 +48,13 @@ export async function getUser(request: Request, response: Response) {
   response.status(200).json(serializeUser(user));
 }
 
-export async function getProfile(_request: Request, response: Response) {
+export type GetProfileResponse =
+  paths["/profile"]["get"]["responses"][200]["content"]["application/json"];
+
+export async function getProfile(
+  _request: Request,
+  response: Response<GetProfileResponse>,
+) {
   if (!response.locals.currentUser) {
     throw new HttpsError("not-found", "Profile not found");
   }
@@ -43,7 +63,13 @@ export async function getProfile(_request: Request, response: Response) {
   response.status(200).json(serializeUser(response.locals.currentUser));
 }
 
-export async function updateProfile(request: Request, response: Response) {
+export type UpdateProfileResponse =
+  paths["/profile"]["post"]["responses"][200]["content"]["application/json"];
+
+export async function updateProfile(
+  request: Request,
+  response: Response<UpdateProfileResponse>,
+) {
   const currentUser = response.locals.currentUser;
   const phoneNumber = response.locals.phoneNumber;
   let user: User;

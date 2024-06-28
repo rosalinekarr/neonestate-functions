@@ -4,8 +4,14 @@ import { Timestamp, getFirestore } from "firebase-admin/firestore";
 import { HttpsError } from "firebase-functions/v2/https";
 import { User, serializeUser } from "../models/user";
 import { Post, serializePost } from "../models/post";
+import type { paths } from "../schema";
 
-export async function listenEvents(request: Request, response: Response) {
+export type ListenEventsResponse = paths["/events"]["get"]["responses"][200];
+
+export async function listenEvents(
+  request: Request,
+  response: Response<ListenEventsResponse>,
+) {
   response.writeHead(200, {
     "Cache-Control": "no-cache",
     "Content-Type": "text/event-stream",

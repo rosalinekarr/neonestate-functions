@@ -92,11 +92,9 @@ describe("serializedRoom", () => {
       expect.objectContaining({
         id: expect.stringMatching(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/),
         createdAt: expect.any(Number),
-        createdBy: user.id,
         description: "Room Description",
         name: "Room_Name",
         updatedAt: expect.any(Number),
-        updatedBy: user.id,
       }),
     );
   });

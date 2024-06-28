@@ -17,8 +17,15 @@ export type User = Record & {
 };
 
 export function serializeUser(user: User) {
-  const { phoneNumber: _, ...censoredUser } = user;
-  return serializeRecord(censoredUser);
+  return {
+    ...serializeRecord(user),
+    ...(user.deletedAt
+      ? {}
+      : {
+          avatarPath: user.avatarPath,
+          username: user.username,
+        }),
+  };
 }
 
 export function newUser({ id, avatarPath, phoneNumber, username }: any): User {

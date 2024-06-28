@@ -8,19 +8,33 @@ import {
   savePost,
   serializePost,
 } from "../models/post";
+import type { paths } from "../schema";
 
-export async function getPosts(request: Request, response: Response) {
+export type GetPostsParams = paths["/posts"]["get"]["parameters"];
+export type GetPostsResponse =
+  paths["/posts"]["get"]["responses"][200]["content"]["application/json"];
+
+export async function getPosts(
+  request: GetPostsParams,
+  response: Response<GetPostsResponse>,
+) {
   const db = getFirestore();
-  const posts = await fetchPosts(db, request.params);
+  const posts = await fetchPosts(db, request.query);
 
   logger.info("Posts queried", {
     currentUser: response.locals.currentUser,
-    query: request.params,
+    query: request.query,
   });
   response.json(posts.map((post: Post) => serializePost(post)));
 }
 
-export async function createPost(request: Request, response: Response) {
+export type CreatePostsResponse =
+  paths["/posts"]["post"]["responses"][200]["content"]["application/json"];
+
+export async function createPost(
+  request: Request,
+  response: Response<CreatePostsResponse>,
+) {
   const db = getFirestore();
   const post = newPost(response.locals.currentUser, request.body);
 

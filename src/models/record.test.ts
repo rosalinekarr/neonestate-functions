@@ -45,9 +45,23 @@ describe("serializeRecord", () => {
       expect.objectContaining({
         id: expect.stringMatching(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/),
         createdAt: expect.any(Number),
-        createdBy: user.id,
         updatedAt: expect.any(Number),
-        updatedBy: user.id,
+      }),
+    );
+  });
+
+  it("returns only the id and deleted timestamp when deleted", () => {
+    const record = newRecord(user);
+
+    record.deletedAt = Timestamp.now();
+    record.deletedBy = user.id;
+
+    const serializedRecord = serializeRecord(record);
+
+    expect(serializedRecord).toEqual(
+      expect.objectContaining({
+        id: expect.stringMatching(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/),
+        deletedAt: expect.any(Number),
       }),
     );
   });

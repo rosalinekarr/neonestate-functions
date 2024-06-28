@@ -73,5 +73,13 @@ export async function fetchRoom(db: Firestore, id: any): Promise<Room> {
 }
 
 export function serializeRoom(room: Room) {
-  return serializeRecord(room);
+  return {
+    ...serializeRecord(room),
+    ...(room.deletedAt
+      ? {}
+      : {
+          description: room.description,
+          name: room.name,
+        }),
+  };
 }

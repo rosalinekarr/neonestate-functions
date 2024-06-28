@@ -103,8 +103,8 @@ describe("serializedPost", () => {
     expect(serializedPost).toEqual(
       expect.objectContaining({
         id: expect.stringMatching(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/),
+        authorId: user.id,
         createdAt: expect.any(Number),
-        createdBy: user.id,
         roomId: room.id,
         sections: [
           expect.objectContaining({
@@ -123,7 +123,6 @@ describe("serializedPost", () => {
           }),
         ],
         updatedAt: expect.any(Number),
-        updatedBy: user.id,
       }),
     );
   });

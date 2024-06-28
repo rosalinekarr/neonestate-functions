@@ -9,19 +9,33 @@ import {
   saveRoom,
   serializeRoom,
 } from "../models/room";
+import type { paths } from "../schema";
 
-export async function getRooms(request: Request, response: Response) {
+export type GetRoomsParams = paths["/rooms"]["get"]["parameters"];
+export type GetRoomsResponse =
+  paths["/rooms"]["get"]["responses"][200]["content"]["application/json"];
+
+export async function getRooms(
+  request: GetRoomsParams,
+  response: Response<GetRoomsResponse>,
+) {
   const db = getFirestore();
-  const rooms = await fetchRooms(db, request.params);
+  const rooms = await fetchRooms(db, request.query);
 
   logger.info("Rooms queried", {
     currentUser: response.locals.currentUser,
-    query: request.params,
+    query: request.query,
   });
   response.json(rooms.map((room) => serializeRoom(room)));
 }
 
-export async function getRoom(request: Request, response: Response) {
+export type GetRoomResponse =
+  paths["/rooms/{id}"]["get"]["responses"][200]["content"]["application/json"];
+
+export async function getRoom(
+  request: Request,
+  response: Response<GetRoomResponse>,
+) {
   const db = getFirestore();
   const room = await fetchRoom(db, request.params.id);
 
@@ -32,7 +46,13 @@ export async function getRoom(request: Request, response: Response) {
   response.status(200).json(serializeRoom(room));
 }
 
-export async function createRoom(request: Request, response: Response) {
+export type CreateRoomResponse =
+  paths["/rooms"]["post"]["responses"][200]["content"]["application/json"];
+
+export async function createRoom(
+  request: Request,
+  response: Response<CreateRoomResponse>,
+) {
   const room = newRoom(response.locals.currentUser, request.body);
 
   const db = getFirestore();
@@ -50,7 +70,13 @@ export async function createRoom(request: Request, response: Response) {
   response.json(serializeRoom(room));
 }
 
-export async function updateRoom(request: Request, response: Response) {
+export type UpdateRoomResponse =
+  paths["/rooms/{id}"]["put"]["responses"][200]["content"]["application/json"];
+
+export async function updateRoom(
+  request: Request,
+  response: Response<UpdateRoomResponse>,
+) {
   const db = getFirestore();
   const room = await fetchRoom(db, request.params.id);
 

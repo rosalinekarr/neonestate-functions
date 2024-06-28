@@ -19,20 +19,33 @@
       ]
     }
   ],
-  "hosting": {
-    "site": "api-neon-estate",
-    "public": "dist",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "rewrites": [
-      {
-        "source": "**",
-        "function": {
-          "functionId": "api",
-          "region": "us-central1"
+  "hosting": [
+    {
+      "site": "api-neon-estate",
+      "public": "dist",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [
+        {
+          "source": "**",
+          "function": {
+            "functionId": "api",
+            "region": "us-central1"
+          }
         }
-      }
-    ]
-  },
+      ]
+    },
+    {
+      "site": "docs-neon-estate",
+      "public": "dist",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/docs.html"
+        }
+      ]
+    }
+  ],
   "storage": {
     "rules": "storage.rules"
   },

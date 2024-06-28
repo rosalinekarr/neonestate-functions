@@ -72,9 +72,7 @@ describe("serializeUser", () => {
         id: "1234",
         avatarPath: "test_avatar_path",
         createdAt: expect.any(Number),
-        createdBy: "1234",
         updatedAt: expect.any(Number),
-        updatedBy: "1234",
         username: "Johnny_Mnemonic",
       }),
     );

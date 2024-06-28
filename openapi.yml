@@ -1,0 +1,356 @@
+openapi: 3.0.3
+info:
+  version: 1.0.0
+  title: neon.estate
+  termsOfService: "https://neon.estate/terms/"
+  contact:
+    email: rose@rosalinekarr.com
+  license:
+    name: MIT
+    url: "https://github.com/rosalinekarr/neon-estate/LICENSE"
+  description: >
+    Neon Estate is a simple social network and forum that I'm building as a side project.
+    This spec describes the API for interacting with the application.
+    More information about Neon Estate can be found at https://github.com/rosalinekarr/neon-estate
+
+servers:
+  - url: "https://api.neon.estate"
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: query
+      name: token
+    BearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+    Post:
+      allOf:
+        - $ref: "#/components/schemas/Record"
+        - type: object
+          properties:
+            sections:
+              type: array
+              items:
+                oneOf:
+                  - $ref: "#/components/schemas/PostAttachmentSection"
+                  - $ref: "#/components/schemas/PostTextSection"
+                discriminator:
+                  propertyName: type
+                  mapping:
+                    attachment: "#/components/schemas/PostAttachmentSection"
+                    text: "#/components/schemas/PostTextSection"
+    PostAttachmentSection:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        path:
+          type: string
+    PostTextSection:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        body:
+          type: string
+    Record:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: integer
+        deletedAt:
+          type: integer
+        updatedAt:
+          type: integer
+    Room:
+      allOf:
+        - $ref: "#/components/schemas/Record"
+        - type: object
+          properties:
+            backgroundPath:
+              type: string
+            description:
+              type: string
+            name:
+              type: string
+    User:
+      allOf:
+        - $ref: "#/components/schemas/Record"
+        - type: object
+          properties:
+            username:
+              type: string
+  responses:
+    Unauthorized:
+      description: "Unauthorized"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ServerError:
+      description: "Server error"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+paths:
+  /events:
+    get:
+      summary: Listen for server events
+      description: >
+        Listen for any new database updates from the server.
+      operationId: listenEvents
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: "OK"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /posts:
+    get:
+      summary: Fetch a collection of posts
+      description: >
+        Fetch a collection of posts given the provided filters and sorting.
+        By default, only 25 records will be returned at a time along with a cursor to fetch more.
+      operationId: getPosts
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    post:
+      summary: Create a post
+      description: >
+        Create a post with the given properties.
+      operationId: createPost
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /profile:
+    get:
+      summary: Fetch the current user
+      description: >
+        Fetch the user associated with the current authorization token.
+      operationId: getProfile
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    post:
+      summary: Update the current user
+      description: >
+        Update the user associated with the current authorization token with the provided properties.
+      operationId: updateProfile
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /rooms:
+    get:
+      summary: Fetch a collection of rooms
+      description: >
+        Fetch a collection of rooms given the provided filters and sorting.
+        By default, only 25 records will be returned at a time along with a cursor to fetch more.
+      operationId: getRooms
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Room"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    post:
+      summary: Create a room
+      description: >
+        Create a room with the given properties.
+      operationId: createRoom
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /rooms/{id}:
+    get:
+      summary: Fetch a room
+      description: >
+        Fetch the room with the given id.
+      operationId: getRoom
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Room ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    put:
+      summary: Update room
+      description: >
+        Update the given room with the provided properties.
+      operationId: updateRoom
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Room ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /users:
+    get:
+      summary: Fetch a collection of users
+      description: >
+        Fetch a collection of users given the provided filters.
+      operationId: getUsers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: phoneNumber
+          in: query
+          description: Phone Number of the user to find
+          schema:
+            type: string
+        - name: username
+          in: query
+          description: Username of the user to find
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /users/{id}:
+    get:
+      summary: Fetch a user
+      description: >
+        Fetch a user with the given id.
+      operationId: getUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"

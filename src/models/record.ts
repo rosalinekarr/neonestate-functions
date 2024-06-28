@@ -24,15 +24,14 @@ export function newRecord({ id }: User): Record {
 }
 
 export function serializeRecord(record: Record) {
-  const { deletedAt, deletedBy, id } = record;
+  const { deletedAt, id } = record;
   if (deletedAt)
     return {
       id,
-      deletedAt,
-      deletedBy,
+      deletedAt: deletedAt.seconds,
     };
   return {
-    ...record,
+    id,
     createdAt: record.createdAt.seconds,
     updatedAt: record.updatedAt.seconds,
   };
