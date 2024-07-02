@@ -30,6 +30,15 @@ components:
       properties:
         error:
           type: string
+    Permission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [ban, censor, edit]
     Post:
       allOf:
         - $ref: "#/components/schemas/Record"
@@ -89,6 +98,13 @@ components:
               type: string
             name:
               type: string
+            permissions:
+              type: array
+              items:
+                $ref: "#/components/schemas/Permission"
+            type:
+              type: string
+              enum: [classic, democracy]
     User:
       allOf:
         - $ref: "#/components/schemas/Record"
@@ -99,6 +115,12 @@ components:
   responses:
     Unauthorized:
       description: "Unauthorized"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: "Record not found"
       content:
         application/json:
           schema:

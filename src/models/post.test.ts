@@ -5,7 +5,7 @@ import {
   newPostTextSection,
   serializePost,
 } from "./post";
-import { newRoom } from "./room";
+import { RoomType, newRoom } from "./room";
 import { newUser } from "./user";
 import { HttpsError } from "firebase-functions/v2/https";
 
@@ -18,6 +18,7 @@ const user = newUser({
 const room = newRoom(user, {
   description: "Room Description",
   name: "Room_Name",
+  type: RoomType.Classic,
 });
 
 describe("newPost", () => {

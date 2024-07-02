@@ -10,12 +10,11 @@ import {
 } from "../models/post";
 import type { paths } from "../schema";
 
-export type GetPostsParams = paths["/posts"]["get"]["parameters"];
 export type GetPostsResponse =
   paths["/posts"]["get"]["responses"][200]["content"]["application/json"];
 
 export async function getPosts(
-  request: GetPostsParams,
+  request: Request,
   response: Response<GetPostsResponse>,
 ) {
   const db = getFirestore();

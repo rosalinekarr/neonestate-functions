@@ -3,6 +3,10 @@ import { getFirestore } from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
 import { HttpsError } from "firebase-functions/v2/https";
 import {
+  grantInitialPermissions,
+  hasPermissionToEditRoom,
+} from "../models/permission";
+import {
   fetchRoom,
   fetchRooms,
   newRoom,
@@ -11,12 +15,11 @@ import {
 } from "../models/room";
 import type { paths } from "../schema";
 
-export type GetRoomsParams = paths["/rooms"]["get"]["parameters"];
 export type GetRoomsResponse =
   paths["/rooms"]["get"]["responses"][200]["content"]["application/json"];
 
 export async function getRooms(
-  request: GetRoomsParams,
+  request: Request,
   response: Response<GetRoomsResponse>,
 ) {
   const db = getFirestore();
@@ -26,7 +29,9 @@ export async function getRooms(
     currentUser: response.locals.currentUser,
     query: request.query,
   });
-  response.json(rooms.map((room) => serializeRoom(room)));
+  response.json(
+    rooms.map((room) => serializeRoom(room, response.locals.currentUser)),
+  );
 }
 
 export type GetRoomResponse =
@@ -43,7 +48,7 @@ export async function getRoom(
     currentUser: response.locals.currentUser,
     room,
   });
-  response.status(200).json(serializeRoom(room));
+  response.status(200).json(serializeRoom(room, response.locals.currentUser));
 }
 
 export type CreateRoomResponse =
@@ -53,7 +58,7 @@ export async function createRoom(
   request: Request,
   response: Response<CreateRoomResponse>,
 ) {
-  const room = newRoom(response.locals.currentUser, request.body);
+  let room = newRoom(response.locals.currentUser, request.body);
 
   const db = getFirestore();
   const [existingRoom] = await fetchRooms(db, { name: room.name });
@@ -61,13 +66,15 @@ export async function createRoom(
     throw new HttpsError("already-exists", "Room name already taken");
   }
 
+  room = grantInitialPermissions(room, response.locals.currentUser);
+
   await saveRoom(db, room);
 
   logger.info("New room created", {
     currentUser: response.locals.currentUser,
     room,
   });
-  response.json(serializeRoom(room));
+  response.json(serializeRoom(room, response.locals.currentUser));
 }
 
 export type UpdateRoomResponse =
@@ -79,6 +86,12 @@ export async function updateRoom(
 ) {
   const db = getFirestore();
   const room = await fetchRoom(db, request.params.id);
+
+  if (!hasPermissionToEditRoom(response.locals.currentUser, room))
+    throw new HttpsError(
+      "permission-denied",
+      "User does not have permissions for this action",
+    );
 
   if (typeof request.body.backgroundPath === "string")
     room.backgroundPath = request.body.backgroundPath;
@@ -92,5 +105,5 @@ export async function updateRoom(
     phoneNumber: response.locals.currentUser,
     room,
   });
-  response.json(serializeRoom(room));
+  response.json(serializeRoom(room, response.locals.currentUser));
 }

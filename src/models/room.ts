@@ -8,16 +8,28 @@ import {
   Query,
 } from "firebase-admin/firestore";
 import { User } from "./user";
+import { Permission, serializePermission } from "./permission";
+
+export enum RoomType {
+  Classic = "classic",
+  Democracy = "democracy",
+}
 
 export type Room = Record & {
   backgroundPath: string;
   description: string;
+  permissions: Permission[];
   name: string;
+  type: RoomType;
 };
+
+export function isRoomType(x: unknown): x is RoomType {
+  return x === RoomType.Classic || x === RoomType.Democracy;
+}
 
 export function newRoom(
   currentUser: User,
-  { backgroundPath, description, name }: any,
+  { backgroundPath, description, name, type }: any,
 ): Room {
   let room: Partial<Room> = newRecord(currentUser);
 
@@ -33,6 +45,12 @@ export function newRoom(
   if (typeof name !== "string" || !name.match(/^[\p{L}\p{N}\p{P}\p{S}]+$/u))
     throw new HttpsError("invalid-argument", "Invalid room name");
   room.name = name;
+
+  if (!isRoomType(type))
+    throw new HttpsError("invalid-argument", "Invalid room type");
+  room.type = type;
+
+  room.permissions = [];
 
   return room as Room;
 }
@@ -72,7 +90,7 @@ export async function fetchRoom(db: Firestore, id: any): Promise<Room> {
   } as Room;
 }
 
-export function serializeRoom(room: Room) {
+export function serializeRoom(room: Room, user: User) {
   return {
     ...serializeRecord(room),
     ...(room.deletedAt
@@ -80,6 +98,10 @@ export function serializeRoom(room: Room) {
       : {
           description: room.description,
           name: room.name,
+          permissions: room.permissions
+            .filter(({ userId }) => userId === user.id)
+            .map(serializePermission),
+          type: room.type,
         }),
   };
 }

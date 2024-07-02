@@ -13,12 +13,11 @@ import {
 } from "../models/user";
 import type { paths } from "../schema";
 
-export type GetUsersParams = paths["/users"]["get"]["parameters"];
 export type GetUsersResponse =
   paths["/users"]["get"]["responses"][200]["content"]["application/json"];
 
 export async function getUsers(
-  request: GetUsersParams,
+  request: Request,
   response: Response<GetUsersResponse>,
 ) {
   const db = getFirestore();

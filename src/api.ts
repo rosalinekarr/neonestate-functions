@@ -54,6 +54,8 @@ function handleAsyncErrors(
         res.status(409).send({ error: err.message });
       } else if (err.code === "invalid-argument") {
         res.status(422).send({ error: err.message });
+      } else if (err.code === "permission-denied") {
+        res.status(403).send({ error: err.message });
       } else {
         res.status(500).send({ error: err.message });
       }

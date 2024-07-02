@@ -12,13 +12,13 @@ import { User } from "./user";
 
 export type PostAttachmentSection = {
   id: UUID;
-  type: string;
+  type: "attachment";
   path: string;
 };
 
 export type PostTextSection = {
   id: UUID;
-  type: string;
+  type: "text";
   body: string;
 };
 
@@ -86,6 +86,35 @@ export function newPost(currentUser: User, params: any): Post {
   return post as Post;
 }
 
+export function serializePostAttachmentSection(
+  section: PostAttachmentSection,
+): { id: string; type: "attachment"; path: string } {
+  return {
+    id: section.id,
+    type: "attachment",
+    path: section.path,
+  };
+}
+
+export function serializePostTextSection(section: PostTextSection): {
+  id: string;
+  type: "text";
+  body: string;
+} {
+  return {
+    id: section.id,
+    type: "text",
+    body: section.body,
+  };
+}
+
+export function serializePostSection(section: PostSection) {
+  if (isPostAttachmentSection(section))
+    return serializePostAttachmentSection(section);
+  if (isPostTextSection(section)) return serializePostTextSection(section);
+  throw new HttpsError("invalid-argument", "Unsupported post section type");
+}
+
 export function serializePost(post: Post) {
   return {
     ...serializeRecord(post),
@@ -94,7 +123,7 @@ export function serializePost(post: Post) {
       : {
           authorId: post.createdBy,
           roomId: post.roomId,
-          sections: post.sections,
+          sections: post.sections.map(serializePostSection),
         }),
   };
 }
