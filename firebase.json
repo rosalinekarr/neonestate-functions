@@ -36,12 +36,12 @@
     },
     {
       "site": "docs-neon-estate",
-      "public": "dist",
+      "public": "docs",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
       "rewrites": [
         {
           "source": "**",
-          "destination": "/docs.html"
+          "destination": "/index.html"
         }
       ]
     }

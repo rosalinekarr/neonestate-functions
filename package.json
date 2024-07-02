@@ -8,7 +8,7 @@
     "fix": "npm run fix:eslint && npm run fix:prettier",
     "fix:eslint": "eslint --ext .ts --fix src",
     "fix:prettier": "npx prettier . --write",
-    "docs:generate": "npx @redocly/cli build-docs openapi.yml --output=docs.html",
+    "docs:generate": "npx @redocly/cli build-docs openapi.yml --output=docs/index.html",
     "docs:lint": "npx @redocly/cli lint openapi.yml",
     "lint": "npm run fix:eslint && npm run fix:prettier && npm run docs:lint",
     "lint:eslint": "eslint --ext .ts src",
