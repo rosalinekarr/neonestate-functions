@@ -84,6 +84,7 @@ export async function updateRoom(
   request: Request,
   response: Response<UpdateRoomResponse>,
 ) {
+  console.log("REQUEST", request);
   const db = getFirestore();
   const room = await fetchRoom(db, request.params.id);
 

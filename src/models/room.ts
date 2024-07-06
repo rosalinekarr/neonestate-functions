@@ -96,6 +96,7 @@ export function serializeRoom(room: Room, user: User) {
     ...(room.deletedAt
       ? {}
       : {
+          backgroundPath: room.backgroundPath,
           description: room.description,
           name: room.name,
           permissions: room.permissions
