@@ -17,6 +17,7 @@ import {
 import { getFirestore } from "firebase-admin/firestore";
 import { HttpsError } from "firebase-functions/v2/https";
 import { fetchUsers } from "./models/user";
+import { logger } from "firebase-functions/v2";
 
 const api = express();
 
@@ -33,6 +34,7 @@ function grabAuthToken(request: Request) {
 }
 
 api.use(async (request: Request, response: Response, next) => {
+  logger.info("Incoming request", { request });
   const authToken = grabAuthToken(request);
   const { phone_number: phoneNumber } =
     await getAuth().verifyIdToken(authToken);
