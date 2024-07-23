@@ -7,8 +7,8 @@ import {
 } from "firebase-admin/firestore";
 import { Record, newRecord, serializeRecord } from "./record";
 import { UUID, isUUID, newUUID } from "./uuid";
-import { HttpsError } from "firebase-functions/v2/https";
 import { User } from "./user";
+import { InvalidArgumentError } from "./error";
 
 export type PostAttachmentSection = {
   id: UUID;
@@ -42,8 +42,7 @@ export function isPostSection(x: any): x is PostSection {
 }
 
 export function newPostAttachmentSection(params: any): PostAttachmentSection {
-  if (typeof params?.path !== "string")
-    throw new HttpsError("invalid-argument", "Invalid attachment post section");
+  if (typeof params?.path !== "string") throw new InvalidArgumentError();
   return {
     id: newUUID(),
     type: "attachment",
@@ -52,8 +51,7 @@ export function newPostAttachmentSection(params: any): PostAttachmentSection {
 }
 
 export function newPostTextSection(params: any): PostTextSection {
-  if (typeof params?.body !== "string")
-    throw new HttpsError("invalid-argument", "Invalid text post section");
+  if (typeof params?.body !== "string") throw new InvalidArgumentError();
   return {
     id: newUUID(),
     type: "text",
@@ -64,18 +62,17 @@ export function newPostTextSection(params: any): PostTextSection {
 export function newPostSection(params: any): PostSection {
   if (params?.type === "attachment") return newPostAttachmentSection(params);
   if (params?.type === "text") return newPostTextSection(params);
-  throw new HttpsError("invalid-argument", "Unsupported post section type");
+  throw new InvalidArgumentError();
 }
 
 export function newPost(currentUser: User, params: any): Post {
   let post: Partial<Post> = newRecord(currentUser);
 
-  if (!isUUID(params.roomId))
-    throw new HttpsError("invalid-argument", "Room id is not a valid UUID");
+  if (!isUUID(params.roomId)) throw new InvalidArgumentError();
   post = { ...post, roomId: params.roomId };
 
   if (!Array.isArray(params.sections) || params.sections.length < 1)
-    throw new HttpsError("invalid-argument", "Invalid post sections");
+    throw new InvalidArgumentError();
   post = {
     ...post,
     sections: params.sections.map(
@@ -112,7 +109,7 @@ export function serializePostSection(section: PostSection) {
   if (isPostAttachmentSection(section))
     return serializePostAttachmentSection(section);
   if (isPostTextSection(section)) return serializePostTextSection(section);
-  throw new HttpsError("invalid-argument", "Unsupported post section type");
+  throw new InvalidArgumentError();
 }
 
 export function serializePost(post: Post) {

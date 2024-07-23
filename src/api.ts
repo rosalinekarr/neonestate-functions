@@ -1,6 +1,4 @@
-import * as express from "express";
-import { Request, Response, NextFunction } from "express";
-import { getAuth } from "firebase-admin/auth";
+import { ServerHttp2Stream } from "http2";
 import {
   createPost,
   createRoom,
@@ -14,71 +12,51 @@ import {
   updateProfile,
   updateRoom,
 } from "./handlers";
-import { getFirestore } from "firebase-admin/firestore";
-import { HttpsError } from "firebase-functions/v2/https";
-import { fetchUsers } from "./models/user";
-import { logger } from "firebase-functions/v2";
+import { User } from "./models/user";
 
-const api = express();
-
-api.use(express.json());
-
-function grabAuthToken(request: Request) {
-  const headerToken = (request.headers.authorization || "").match(
-    /Bearer (.+)/,
-  )?.[1];
-  if (headerToken) return headerToken;
-  const paramToken = request.query.token;
-  if (typeof paramToken === "string") return paramToken;
-  throw new HttpsError("permission-denied", "Invalid authorization token");
+export interface RequestInfo {
+  currentUser: User;
+  getBody: () => Promise<any>;
+  pathParams?: string[];
+  phoneNumber: string;
+  query?: URLSearchParams;
+  stream: ServerHttp2Stream;
 }
 
-api.use(async (request: Request, response: Response, next) => {
-  logger.info("Incoming request", { request });
-  const authToken = grabAuthToken(request);
-  const { phone_number: phoneNumber } =
-    await getAuth().verifyIdToken(authToken);
-  response.locals.phoneNumber = phoneNumber;
-  const db = getFirestore();
-  const [currentUser] = await fetchUsers(db, { phoneNumber });
-  response.locals.currentUser = currentUser;
-  next();
-});
-
-function handleAsyncErrors(
-  handler: (req: Request, res: Response) => Promise<void>,
-) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    handler(req, res).catch((err) => {
-      if (err.code === "not-found") {
-        res.status(404).send({ error: err.message });
-      } else if (err.code === "already-exists") {
-        res.status(409).send({ error: err.message });
-      } else if (err.code === "invalid-argument") {
-        res.status(422).send({ error: err.message });
-      } else if (err.code === "permission-denied") {
-        res.status(403).send({ error: err.message });
-      } else {
-        res.status(500).send({ error: err.message });
-      }
-      next(err);
-    });
-  };
+export interface Route {
+  method: string;
+  pathMatcher: RegExp;
+  handler: (req: RequestInfo) => Promise<any>;
 }
 
-api.get("/events", listenEvents);
-
-api.get("/posts", handleAsyncErrors(getPosts));
-api.post("/posts", handleAsyncErrors(createPost));
-
-api.get("/rooms", handleAsyncErrors(getRooms));
-api.get("/rooms/:id", handleAsyncErrors(getRoom));
-api.post("/rooms", handleAsyncErrors(createRoom));
-api.put("/rooms/:id", handleAsyncErrors(updateRoom));
-
-api.get("/users", handleAsyncErrors(getUsers));
-api.get("/users/:id", handleAsyncErrors(getUser));
-api.get("/profile", handleAsyncErrors(getProfile));
-api.post("/profile", handleAsyncErrors(updateProfile));
+const api: Route[] = [
+  { method: "get", pathMatcher: /\/events/, handler: listenEvents },
+  { method: "get", pathMatcher: /\/events/, handler: listenEvents },
+  { method: "get", pathMatcher: /\/posts/, handler: getPosts },
+  { method: "post", pathMatcher: /\/posts/, handler: createPost },
+  { method: "get", pathMatcher: /\/profile/, handler: getProfile },
+  { method: "post", pathMatcher: /\/profile/, handler: updateProfile },
+  { method: "get", pathMatcher: /\/rooms/, handler: getRooms },
+  {
+    method: "get",
+    pathMatcher:
+      /\/rooms\/([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})$/,
+    handler: getRoom,
+  },
+  { method: "post", pathMatcher: /\/rooms/, handler: createRoom },
+  {
+    method: "put",
+    pathMatcher:
+      /\/rooms\/([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})$/,
+    handler: updateRoom,
+  },
+  { method: "get", pathMatcher: /\/users/, handler: getUsers },
+  {
+    method: "get",
+    pathMatcher:
+      /\/users\/([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})$/,
+    handler: getUser,
+  },
+];
 
 export default api;

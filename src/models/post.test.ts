@@ -7,7 +7,7 @@ import {
 } from "./post";
 import { RoomType, newRoom } from "./room";
 import { newUser } from "./user";
-import { HttpsError } from "firebase-functions/v2/https";
+import { InvalidArgumentError } from "./error";
 
 const user = newUser({
   avatarPath: "path_to_avatar",
@@ -69,7 +69,7 @@ describe("newPost", () => {
           newPostTextSection({ body: "Words words words" }),
         ],
       });
-    }).toThrow(HttpsError);
+    }).toThrow(InvalidArgumentError);
   });
 
   it("requires post sections", () => {
@@ -77,7 +77,7 @@ describe("newPost", () => {
       newPost(user, {
         roomId: room.id,
       });
-    }).toThrow(HttpsError);
+    }).toThrow(InvalidArgumentError);
   });
 
   it("requires at least one post section", () => {
@@ -86,7 +86,7 @@ describe("newPost", () => {
         roomId: room.id,
         sections: [],
       });
-    }).toThrow(HttpsError);
+    }).toThrow(InvalidArgumentError);
   });
 });
 

@@ -1,8 +1,8 @@
 import { Timestamp } from "firebase-admin/firestore";
 import { RoomType, newRoom, serializeRoom } from "./room";
 import { newUser } from "./user";
-import { HttpsError } from "firebase-functions/v2/https";
 import { PermissionType, newPermission } from "./permission";
+import { InvalidArgumentError } from "./error";
 
 const user = newUser({
   avatarPath: "path_to_avatar",
@@ -65,7 +65,7 @@ describe("newRoom", () => {
         description: "Room Description",
         type: RoomType.Classic,
       });
-    }).toThrow(HttpsError);
+    }).toThrow(InvalidArgumentError);
   });
 
   it("requires a type", () => {
@@ -74,7 +74,7 @@ describe("newRoom", () => {
         description: "Room Description",
         name: "Room_Name",
       });
-    }).toThrow(HttpsError);
+    }).toThrow(InvalidArgumentError);
   });
 
   it("validates room type", () => {
@@ -84,7 +84,7 @@ describe("newRoom", () => {
         name: "Room Name",
         type: "not-a-room-type",
       });
-    }).toThrow(HttpsError);
+    }).toThrow(InvalidArgumentError);
   });
 
   it("validates no spaces in name", () => {
@@ -93,7 +93,7 @@ describe("newRoom", () => {
         description: "Room Description",
         name: "Room Name",
       });
-    }).toThrow(HttpsError);
+    }).toThrow(InvalidArgumentError);
   });
 
   it("requires a description", () => {
@@ -101,7 +101,7 @@ describe("newRoom", () => {
       newRoom(user, {
         name: "Room_Name",
       });
-    }).toThrow(HttpsError);
+    }).toThrow(InvalidArgumentError);
   });
 });
 

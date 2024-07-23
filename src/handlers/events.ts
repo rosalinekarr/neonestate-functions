@@ -1,115 +1,37 @@
-import { Request, Response } from "express";
-import * as logger from "firebase-functions/logger";
-import { Timestamp, getFirestore } from "firebase-admin/firestore";
-import { HttpsError } from "firebase-functions/v2/https";
-import { User, serializeUser } from "../models/user";
-import { Post, serializePost } from "../models/post";
+import { constants } from "http2";
 import type { paths } from "../schema";
+import { RequestInfo } from "../api";
+import { subscribe } from "../models/event";
 
 export type ListenEventsResponse = paths["/events"]["get"]["responses"][200];
 
-export async function listenEvents(
-  request: Request,
-  response: Response<ListenEventsResponse>,
-) {
-  response.writeHead(200, {
-    "Cache-Control": "no-cache",
-    "Content-Type": "text/event-stream",
-    Connection: "keep-alive",
-    "Keep-Alive": "timeout=3600, max=24",
-  });
-  response.flushHeaders();
-
-  const db = getFirestore();
-
-  const lastTsRaw = request.query.lastTs;
-  if (typeof lastTsRaw !== "string" || !lastTsRaw?.match(/\d+/))
-    throw new HttpsError("invalid-argument", "Invalid lastTs");
-  const lastTs = parseInt(lastTsRaw);
-
-  logger.info("Subscribing listener", {
-    phoneNumber: response.locals.phoneNumber,
+export async function listenEvents({
+  phoneNumber,
+  stream,
+}: RequestInfo): Promise<null> {
+  stream.respond({
+    [constants.HTTP2_HEADER_ACCESS_CONTROL_ALLOW_CREDENTIALS]: "true",
+    [constants.HTTP2_HEADER_ACCESS_CONTROL_ALLOW_ORIGIN]:
+      process.env.APP_DOMAIN,
+    [constants.HTTP2_HEADER_CACHE_CONTROL]: "no-cache",
+    [constants.HTTP2_HEADER_CONTENT_TYPE]: "text/event-stream",
+    [constants.HTTP2_HEADER_STATUS]: 200,
   });
 
-  const postsQuery = db
-    .collection("posts")
-    .where("updatedAt", ">=", new Timestamp(lastTs, 0));
-
-  const unsubscribePosts = postsQuery.onSnapshot(
-    (querySnapshot) =>
-      querySnapshot.forEach((doc) => {
-        const postData = doc.data();
-        const post = serializePost({
-          id: doc.id,
-          ...postData,
-        } as Post);
-        if (post.deletedAt) {
-          logger.info("Sending event", { name: "postdeleted", data: post });
-          response.write(
-            `event: postdeleted\ndata: ${JSON.stringify(post)}\n\n`,
-          );
-        } else if (post.createdAt === post.updatedAt) {
-          logger.info("Sending event", { name: "postcreated", data: post });
-          response.write(
-            `event: postcreated\ndata: ${JSON.stringify(post)}\n\n`,
-          );
-        } else {
-          logger.info("Sending event", { name: "postupdated", data: post });
-          response.write(
-            `event: postupdated\ndata: ${JSON.stringify(post)}\n\n`,
-          );
-        }
+  const unsubscribeFns = ["postcreated", "usercreated", "userupdated"].map(
+    (eventType) =>
+      subscribe(eventType, (data: any) => {
+        console.log(
+          `Sending ${eventType} event to ${phoneNumber}: ${JSON.stringify(data)}`,
+        );
+        stream.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
       }),
-    (error: Error) => {
-      logger.error("Error listening for post events", { error });
-      response.end();
-    },
   );
 
-  const usersQuery = db
-    .collection("users")
-    .where("updatedAt", ">=", new Timestamp(lastTs, 0));
-
-  const unsubscribeUsers = usersQuery.onSnapshot(
-    (querySnapshot) =>
-      querySnapshot.forEach((doc) => {
-        const userData = doc.data();
-        const user = serializeUser({
-          id: doc.id,
-          ...userData,
-        } as User);
-        if (user.deletedAt) {
-          logger.info("Sending event", { name: "userdeleted", data: user });
-          response.write(
-            `event: userdeleted\ndata: ${JSON.stringify(user)}\n\n`,
-          );
-        } else if (user.createdAt === user.updatedAt) {
-          logger.info("Sending event", { name: "usercreated", data: user });
-          response.write(
-            `event: usercreated\ndata: ${JSON.stringify(user)}\n\n`,
-          );
-        } else {
-          logger.info("Sending event", { name: "userupdated", data: user });
-          response.write(
-            `event: userupdated\ndata: ${JSON.stringify(user)}\n\n`,
-          );
-        }
-      }),
-    (error: Error) => {
-      logger.error("Error listening for user events", { error });
-      response.end();
-    },
-  );
-
-  logger.info("Listener subscribed", {
-    phoneNumber: response.locals.phoneNumber,
-  });
-
-  response.on("close", () => {
-    unsubscribePosts();
-    unsubscribeUsers();
-
-    logger.info("Listener unsubscribed");
-    response.end();
+  return new Promise((resolve) => {
+    stream.on("close", () => {
+      unsubscribeFns.forEach((fn) => fn());
+      resolve(null);
+    });
   });
 }

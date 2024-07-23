@@ -1,7 +1,4 @@
-import { Request, Response } from "express";
 import { getFirestore } from "firebase-admin/firestore";
-import * as logger from "firebase-functions/logger";
-import { HttpsError } from "firebase-functions/v2/https";
 import {
   grantInitialPermissions,
   hasPermissionToEditRoom,
@@ -14,97 +11,92 @@ import {
   serializeRoom,
 } from "../models/room";
 import type { paths } from "../schema";
+import { AlreadyExistsError, PermissionDeniedError } from "../models/error";
+import { RequestInfo } from "../api";
 
 export type GetRoomsResponse =
   paths["/rooms"]["get"]["responses"][200]["content"]["application/json"];
 
-export async function getRooms(
-  request: Request,
-  response: Response<GetRoomsResponse>,
-) {
+export async function getRooms({
+  currentUser,
+  phoneNumber,
+  query,
+}: RequestInfo): Promise<GetRoomsResponse> {
   const db = getFirestore();
-  const rooms = await fetchRooms(db, request.query);
+  const rooms = await fetchRooms(db, query);
 
-  logger.info("Rooms queried", {
-    currentUser: response.locals.currentUser,
-    query: request.query,
-  });
-  response.json(
-    rooms.map((room) => serializeRoom(room, response.locals.currentUser)),
-  );
+  console.log(`Rooms queried by ${phoneNumber}: ${JSON.stringify(query)}`);
+  return rooms.map((room) => serializeRoom(room, currentUser));
 }
 
 export type GetRoomResponse =
   paths["/rooms/{id}"]["get"]["responses"][200]["content"]["application/json"];
 
-export async function getRoom(
-  request: Request,
-  response: Response<GetRoomResponse>,
-) {
-  const db = getFirestore();
-  const room = await fetchRoom(db, request.params.id);
+export async function getRoom({
+  currentUser,
+  pathParams,
+  phoneNumber,
+}: RequestInfo): Promise<GetRoomResponse> {
+  if (typeof pathParams === "undefined") throw new Error("Invalid path params");
 
-  logger.info("Room fetched", {
-    currentUser: response.locals.currentUser,
-    room,
-  });
-  response.status(200).json(serializeRoom(room, response.locals.currentUser));
+  const db = getFirestore();
+  const room = await fetchRoom(db, pathParams[0]);
+
+  console.log(`Rooms fetched by ${phoneNumber}: ${JSON.stringify(room)}`);
+  return serializeRoom(room, currentUser);
 }
 
 export type CreateRoomResponse =
   paths["/rooms"]["post"]["responses"][200]["content"]["application/json"];
 
-export async function createRoom(
-  request: Request,
-  response: Response<CreateRoomResponse>,
-) {
-  let room = newRoom(response.locals.currentUser, request.body);
+export async function createRoom({
+  currentUser,
+  getBody,
+  phoneNumber,
+}: RequestInfo): Promise<CreateRoomResponse> {
+  const body = await getBody();
+  let room = newRoom(currentUser, body);
 
   const db = getFirestore();
   const [existingRoom] = await fetchRooms(db, { name: room.name });
   if (existingRoom) {
-    throw new HttpsError("already-exists", "Room name already taken");
+    throw new AlreadyExistsError();
   }
 
-  room = grantInitialPermissions(room, response.locals.currentUser);
+  room = grantInitialPermissions(room, currentUser);
 
   await saveRoom(db, room);
 
-  logger.info("New room created", {
-    currentUser: response.locals.currentUser,
-    room,
-  });
-  response.json(serializeRoom(room, response.locals.currentUser));
+  console.log(`New room created by ${phoneNumber}: ${JSON.stringify(room)}`);
+  return serializeRoom(room, currentUser);
 }
 
 export type UpdateRoomResponse =
   paths["/rooms/{id}"]["put"]["responses"][200]["content"]["application/json"];
 
-export async function updateRoom(
-  request: Request,
-  response: Response<UpdateRoomResponse>,
-) {
-  console.log("REQUEST", request);
+export async function updateRoom({
+  currentUser,
+  getBody,
+  pathParams,
+  phoneNumber,
+}: RequestInfo): Promise<UpdateRoomResponse> {
+  if (typeof pathParams === "undefined") throw new Error("Invalid path params");
+
   const db = getFirestore();
-  const room = await fetchRoom(db, request.params.id);
+  const room = await fetchRoom(db, pathParams[0]);
 
-  if (!hasPermissionToEditRoom(response.locals.currentUser, room))
-    throw new HttpsError(
-      "permission-denied",
-      "User does not have permissions for this action",
-    );
+  if (!hasPermissionToEditRoom(currentUser, room))
+    throw new PermissionDeniedError();
 
-  if (typeof request.body.backgroundPath === "string")
-    room.backgroundPath = request.body.backgroundPath;
+  const body = await getBody();
 
-  if (typeof request.body.description === "string")
-    room.description = request.body.description;
+  if (typeof body.backgroundPath === "string")
+    room.backgroundPath = body.backgroundPath;
+
+  if (typeof body.description === "string") room.description = body.description;
 
   await saveRoom(db, room);
 
-  logger.info("Room updated", {
-    phoneNumber: response.locals.currentUser,
-    room,
-  });
-  response.json(serializeRoom(room, response.locals.currentUser));
+  console.log(`Room updated by ${phoneNumber}: ${JSON.stringify(room)}`);
+  return serializeRoom(room, currentUser);
 }

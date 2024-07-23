@@ -3,22 +3,6 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
-  "functions": [
-    {
-      "source": ".",
-      "codebase": "default",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log"
-      ],
-      "predeploy": [
-        "npm --prefix \"$RESOURCE_DIR\" run lint",
-        "npm --prefix \"$RESOURCE_DIR\" run build"
-      ]
-    }
-  ],
   "hosting": [
     {
       "site": "api-neon-estate",
@@ -27,8 +11,8 @@
       "rewrites": [
         {
           "source": "**",
-          "function": {
-            "functionId": "api",
+          "run": {
+            "serviceId": "api",
             "region": "us-central1"
           }
         }
@@ -52,9 +36,6 @@
   "emulators": {
     "auth": {
       "port": 9099
-    },
-    "functions": {
-      "port": 5001
     },
     "firestore": {
       "port": 8080

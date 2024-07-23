@@ -2,22 +2,21 @@
   "name": "functions",
   "scripts": {
     "build": "tsc",
-    "build:watch": "tsc --watch",
+    "build:all": "npm run build:schema && npm run build && npm run build:docs",
+    "build:docs": "npx @redocly/cli build-docs openapi.yml --output=docs/index.html",
     "build:schema": "npx openapi-typescript openapi.yml -o src/schema.d.ts",
+    "build:watch": "tsc --watch",
     "deploy": "firebase deploy",
+    "dev": "node --env-file .env.development dist/index.js",
+    "emulator": "firebase emulators:start",
     "fix": "npm run fix:eslint && npm run fix:prettier",
     "fix:eslint": "eslint --ext .ts --fix src",
     "fix:prettier": "npx prettier . --write",
-    "docs:generate": "npx @redocly/cli build-docs openapi.yml --output=docs/index.html",
-    "docs:lint": "npx @redocly/cli lint openapi.yml",
-    "lint": "npm run fix:eslint && npm run fix:prettier && npm run docs:lint",
+    "lint": "npm run fix:eslint && npm run fix:prettier && npm run lint:docs",
+    "lint:docs": "npx @redocly/cli lint openapi.yml",
     "lint:eslint": "eslint --ext .ts src",
     "lint:prettier": "npx prettier . --check",
-    "logs": "firebase functions:log",
-    "serve": "npm run build && firebase emulators:start",
-    "serve:watch": "npm run build:watch; firebase emulators:start",
-    "shell": "npm run build && firebase functions:shell",
-    "start": "npm run shell",
+    "start": "node --env-file .env dist/index.js",
     "test": "jest src/**/*.test.ts"
   },
   "engines": {
@@ -25,9 +24,7 @@
   },
   "main": "dist/index.js",
   "dependencies": {
-    "express": "^4.19.2",
     "firebase-admin": "^11.8.0",
-    "firebase-functions": "^5.0.1",
     "ts-jest": "^29.1.5"
   },
   "devDependencies": {
@@ -38,7 +35,6 @@
     "eslint": "^8.9.0",
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-import": "^2.25.4",
-    "firebase-functions-test": "^3.1.0",
     "jest": "^29.7.0",
     "openapi-typescript": "^7.0.0",
     "prettier": "3.3.2",

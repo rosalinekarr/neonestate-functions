@@ -1,4 +1,3 @@
-import { HttpsError } from "firebase-functions/v2/https";
 import { PhoneNumber, isPhoneNumber } from "./phoneNumber";
 import { Record, serializeRecord } from "./record";
 import {
@@ -9,6 +8,7 @@ import {
   Timestamp,
 } from "firebase-admin/firestore";
 import { isUUID, newUUID } from "./uuid";
+import { InvalidArgumentError, NotFoundError } from "./error";
 
 export type User = Record & {
   avatarPath: string;
@@ -38,19 +38,17 @@ export function newUser({ id, avatarPath, phoneNumber, username }: any): User {
     updatedBy: userId,
   };
 
-  if (typeof avatarPath !== "string")
-    throw new HttpsError("invalid-argument", "Invalid avatarPath field");
+  if (typeof avatarPath !== "string") throw new InvalidArgumentError();
   user.avatarPath = avatarPath;
 
-  if (!isPhoneNumber(phoneNumber))
-    throw new HttpsError("invalid-argument", "Invalid phone number field");
+  if (!isPhoneNumber(phoneNumber)) throw new InvalidArgumentError();
   user.phoneNumber = phoneNumber;
 
   if (
     typeof username !== "string" ||
     !username.match(/^[\p{L}\p{N}\p{P}\p{S}]+$/u)
   )
-    throw new HttpsError("invalid-argument", "Invalid username format");
+    throw new InvalidArgumentError();
   user.username = username;
 
   return user as User;
@@ -84,9 +82,9 @@ export async function fetchUsers(
 }
 
 export async function fetchUser(db: Firestore, id: any): Promise<User> {
-  if (!isUUID(id)) throw new HttpsError("invalid-argument", "Invalid user id");
+  if (!isUUID(id)) throw new InvalidArgumentError();
   const doc = await db.collection("users").doc(id).get();
-  if (!doc.exists) throw new HttpsError("not-found", "User not found");
+  if (!doc.exists) throw new NotFoundError();
   const data = doc.data();
   return {
     id: doc.id,

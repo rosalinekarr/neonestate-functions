@@ -1,4 +1,4 @@
-import { HttpsError } from "firebase-functions/v2/https";
+import { InvalidArgumentError } from "./error";
 import { newUser, serializeUser } from "./user";
 
 describe("newUser", () => {
@@ -35,7 +35,7 @@ describe("newUser", () => {
         phoneNumber: "+1234567890",
         username: "Johnny_Mnemonic",
       });
-    }).toThrow(HttpsError);
+    }).toThrow(InvalidArgumentError);
   });
 
   it("throws if phoneNumber is not provided", () => {
@@ -44,7 +44,7 @@ describe("newUser", () => {
         avatarPath: "path_to_avatar",
         username: "Johnny_Mnemonic",
       });
-    }).toThrow(HttpsError);
+    }).toThrow(InvalidArgumentError);
   });
 
   it("throws if username is not provided", () => {
@@ -53,7 +53,7 @@ describe("newUser", () => {
         avatarPath: "path_to_avatar",
         phoneNumber: "+1234567890",
       });
-    }).toThrow(HttpsError);
+    }).toThrow(InvalidArgumentError);
   });
 });
 

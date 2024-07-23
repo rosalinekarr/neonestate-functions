@@ -1,4 +1,3 @@
-import { HttpsError } from "firebase-functions/v2/https";
 import { Record, newRecord, serializeRecord } from "./record";
 import { isUUID } from "./uuid";
 import {
@@ -9,6 +8,7 @@ import {
 } from "firebase-admin/firestore";
 import { User } from "./user";
 import { Permission, serializePermission } from "./permission";
+import { InvalidArgumentError, NotFoundError } from "./error";
 
 export enum RoomType {
   Classic = "classic",
@@ -35,19 +35,17 @@ export function newRoom(
 
   if (typeof backgroundPath === "string") room.backgroundPath = backgroundPath;
   else if (backgroundPath !== undefined) {
-    throw new HttpsError("invalid-argument", "Invalid room backgroundPath");
+    throw new InvalidArgumentError();
   }
 
-  if (typeof description !== "string")
-    throw new HttpsError("invalid-argument", "Invalid room description");
+  if (typeof description !== "string") throw new InvalidArgumentError();
   room.description = description;
 
   if (typeof name !== "string" || !name.match(/^[\p{L}\p{N}\p{P}\p{S}]+$/u))
-    throw new HttpsError("invalid-argument", "Invalid room name");
+    throw new InvalidArgumentError();
   room.name = name;
 
-  if (!isRoomType(type))
-    throw new HttpsError("invalid-argument", "Invalid room type");
+  if (!isRoomType(type)) throw new InvalidArgumentError();
   room.type = type;
 
   room.permissions = [];
@@ -80,9 +78,9 @@ export async function fetchRooms(db: Firestore, params: any): Promise<Room[]> {
 }
 
 export async function fetchRoom(db: Firestore, id: any): Promise<Room> {
-  if (!isUUID(id)) throw new HttpsError("invalid-argument", "Invalid room id");
+  if (!isUUID(id)) throw new InvalidArgumentError();
   const doc = await db.collection("rooms").doc(id).get();
-  if (!doc.exists) throw new HttpsError("not-found", "Room not found");
+  if (!doc.exists) throw new NotFoundError();
   const data = doc.data();
   return {
     id: doc.id,

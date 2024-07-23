@@ -1,7 +1,4 @@
-import { Request, Response } from "express";
 import { getFirestore } from "firebase-admin/firestore";
-import * as logger from "firebase-functions/logger";
-import { HttpsError } from "firebase-functions/v2/https";
 import {
   User,
   fetchUser,
@@ -12,87 +9,88 @@ import {
   serializeUser,
 } from "../models/user";
 import type { paths } from "../schema";
+import { AlreadyExistsError, NotFoundError } from "../models/error";
+import { RequestInfo } from "../api";
+import { emit } from "../models/event";
 
 export type GetUsersResponse =
   paths["/users"]["get"]["responses"][200]["content"]["application/json"];
 
-export async function getUsers(
-  request: Request,
-  response: Response<GetUsersResponse>,
-) {
+export async function getUsers({
+  currentUser,
+  phoneNumber,
+  query,
+}: RequestInfo): Promise<GetUsersResponse> {
   const db = getFirestore();
-  const users = await fetchUsers(db, request.query);
+  const users = await fetchUsers(db, query);
 
-  logger.info("Users queried", {
-    currentUser: response.locals.currentUser,
-    query: request.query,
-  });
-  response.json(users.map((user) => serializeUser(user)));
+  console.log(`Users queried by ${phoneNumber}: ${JSON.stringify(query)}`);
+  return users.map((user) => serializeUser(user));
 }
 
 export type GetUserResponse =
   paths["/users/{id}"]["get"]["responses"][200]["content"]["application/json"];
 
-export async function getUser(
-  request: Request,
-  response: Response<GetUserResponse>,
-) {
-  const db = getFirestore();
-  const user = await fetchUser(db, request.params.id);
+export async function getUser({
+  currentUser,
+  pathParams,
+  phoneNumber,
+}: RequestInfo): Promise<GetUserResponse> {
+  if (typeof pathParams === "undefined") throw new Error("Invalid path params");
 
-  logger.info("User fetched", {
-    currentUser: response.locals.currentUser,
-    user,
-  });
-  response.status(200).json(serializeUser(user));
+  const db = getFirestore();
+  const user = await fetchUser(db, pathParams[0]);
+
+  console.log(`User fetched by ${phoneNumber}: ${JSON.stringify(user)}`);
+  return serializeUser(user);
 }
 
 export type GetProfileResponse =
   paths["/profile"]["get"]["responses"][200]["content"]["application/json"];
 
-export async function getProfile(
-  _request: Request,
-  response: Response<GetProfileResponse>,
-) {
-  if (!response.locals.currentUser) {
-    throw new HttpsError("not-found", "Profile not found");
-  }
+export async function getProfile({
+  currentUser,
+  phoneNumber,
+}: RequestInfo): Promise<GetProfileResponse> {
+  if (!currentUser) throw new NotFoundError();
 
-  logger.info("Profile fetched", { currentUser: response.locals.currentUser });
-  response.status(200).json(serializeUser(response.locals.currentUser));
+  console.log(`Profile fetched by ${phoneNumber}`);
+  return serializeUser(currentUser);
 }
 
 export type UpdateProfileResponse =
   paths["/profile"]["post"]["responses"][200]["content"]["application/json"];
 
-export async function updateProfile(
-  request: Request,
-  response: Response<UpdateProfileResponse>,
-) {
-  const currentUser = response.locals.currentUser;
-  const phoneNumber = response.locals.phoneNumber;
+export async function updateProfile({
+  currentUser,
+  getBody,
+  phoneNumber,
+}: RequestInfo): Promise<UpdateProfileResponse> {
   let user: User;
+  const isNewUser = !currentUser;
+  const body = await getBody();
 
-  if (currentUser) {
-    user = updateUser(currentUser, request.body);
-  } else {
+  if (isNewUser) {
     user = newUser({
-      ...request.body,
+      ...body,
       phoneNumber,
     });
+  } else {
+    user = updateUser(currentUser, body);
   }
 
   const db = getFirestore();
   const [existingUser] = await fetchUsers(db, { username: user.username });
   if (existingUser && existingUser.id !== user.id) {
-    throw new HttpsError("already-exists", "Username already taken");
+    throw new AlreadyExistsError();
   }
 
   await saveUser(db, user);
 
-  logger.info("Profile updated", {
-    phoneNumber,
-    user,
-  });
-  response.json(serializeUser(user));
+  const responseObj = serializeUser(user);
+  console.log(
+    `Profile updated by ${phoneNumber}: ${JSON.stringify(responseObj)}`,
+  );
+  emit(isNewUser ? "usercreated" : "userupdated", responseObj);
+  return responseObj;
 }

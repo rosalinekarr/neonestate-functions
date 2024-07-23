@@ -1,6 +1,4 @@
-import { Request, Response } from "express";
 import { getFirestore } from "firebase-admin/firestore";
-import * as logger from "firebase-functions/logger";
 import {
   Post,
   fetchPosts,
@@ -9,39 +7,38 @@ import {
   serializePost,
 } from "../models/post";
 import type { paths } from "../schema";
+import { RequestInfo } from "../api";
+import { emit } from "../models/event";
 
 export type GetPostsResponse =
   paths["/posts"]["get"]["responses"][200]["content"]["application/json"];
 
-export async function getPosts(
-  request: Request,
-  response: Response<GetPostsResponse>,
-) {
+export async function getPosts({ phoneNumber, query }: RequestInfo) {
   const db = getFirestore();
-  const posts = await fetchPosts(db, request.query);
+  const posts = await fetchPosts(db, query);
 
-  logger.info("Posts queried", {
-    currentUser: response.locals.currentUser,
-    query: request.query,
-  });
-  response.json(posts.map((post: Post) => serializePost(post)));
+  console.log(`Posts queried by ${phoneNumber}: ${JSON.stringify(query)}`);
+  return posts.map((post: Post) => serializePost(post));
 }
 
 export type CreatePostsResponse =
   paths["/posts"]["post"]["responses"][200]["content"]["application/json"];
 
-export async function createPost(
-  request: Request,
-  response: Response<CreatePostsResponse>,
-) {
+export async function createPost({
+  currentUser,
+  getBody,
+  phoneNumber,
+}: RequestInfo): Promise<CreatePostsResponse> {
   const db = getFirestore();
-  const post = newPost(response.locals.currentUser, request.body);
+  const body = await getBody();
+  const post = newPost(currentUser, body);
 
   await savePost(db, post);
 
-  logger.info("New post created", {
-    currentUser: response.locals.currentUser,
-    post: post,
-  });
-  response.json(serializePost(post));
+  const responseObj = serializePost(post);
+  console.log(
+    `Posts queried by ${phoneNumber}: ${JSON.stringify(responseObj)}`,
+  );
+  emit("postcreated", responseObj);
+  return responseObj;
 }
